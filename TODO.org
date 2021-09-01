@@ -1,0 +1,9 @@
+#+TITLE: TODO
+
+* What needs to be done
+** DONE Add event to project, 5 minutes - get times 12:00-12:05
+** DONE Add another event 10 mintues - get times 12:05-12:15
+** DONE Add event and change base time
+** DONE Change base time and add event
+** TODO Change tests to assert simpler type from event instead of string from TimeRange
+** TODO Then use it in TimeRange!

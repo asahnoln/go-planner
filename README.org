@@ -1,5 +1,8 @@
-#+TITLE: TODO
+#+TITLE: About this package
 
-* What needs to be done
-** [ ] Add event 5 minutes - get times 12:00-12:05
-** [ ] Add another event 10 mintues - get times 12:05-12:15
+* What is it?
+Package planner is designed for creating dynamic time tables.
+
+You plan a project, an event or a meeting, which consists of subprocesses. For example: introduce yourself, introduce the project, describe the problem etc. You know how much time each subprocess should take, but you don't time it - you check against the clock. So that introduction should go from 12:00 till 12:05, then project description should go from 12:05 till 12:15 etc.
+
+It's a pain to calculate those time ranges in your head. That's why I produced this package, so that you can plan events and in the result have a dynamic timetable of each subprocess of the event.
