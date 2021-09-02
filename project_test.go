@@ -10,9 +10,9 @@ import (
 func TestAddEventGetTimeRange(t *testing.T) {
 	project := planner.NewProject()
 
-	event := project.AddEvent(5 * time.Minute)
-	event2 := project.AddEvent(10 * time.Minute)
-	event3 := project.AddEvent(15 * time.Minute)
+	event := project.AddEvent("Introduction", 5*time.Minute)
+	event2 := project.AddEvent("Warmup", 10*time.Minute)
+	event3 := project.AddEvent("Zip Zap Zop", 15*time.Minute)
 
 	message := "want time range %q, got %q"
 	assertSameString(t, "12:15-12:30", event3.TimeRange(), message)
@@ -22,7 +22,7 @@ func TestAddEventGetTimeRange(t *testing.T) {
 
 func TestChangeProjectTimeAfterEvent(t *testing.T) {
 	project := planner.NewProject()
-	event := project.AddEvent(5 * time.Minute)
+	event := project.AddEvent("Warmup", 5*time.Minute)
 	project.StartTime(time.Date(2000, 1, 1, 15, 30, 0, 0, time.UTC))
 
 	assertSameString(t, "15:30-15:35", event.TimeRange(), "want time range with changed base %q, got %q")
@@ -31,7 +31,7 @@ func TestChangeProjectTimeAfterEvent(t *testing.T) {
 func TestChangeProjectTimeBeforeEvent(t *testing.T) {
 	project := planner.NewProject()
 	project.StartTime(time.Date(2000, 1, 1, 15, 30, 0, 0, time.UTC))
-	event := project.AddEvent(5 * time.Minute)
+	event := project.AddEvent("Warmup", 5*time.Minute)
 
 	assertSameString(t, "15:30-15:35", event.TimeRange(), "want time range with changed base %q, got %q")
 }
