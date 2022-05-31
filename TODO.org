@@ -8,3 +8,8 @@
 ** DONE Timetable from project
 ** TODO Change tests to assert simpler type from event instead of string from TimeRange
 ** TODO Then use it in TimeRange!
+** PROJ CLI
+*** TODO Create project
+*** TODO Add events
+*** TODO Swap events
+*** TODO Export to PDF

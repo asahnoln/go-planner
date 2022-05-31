@@ -20,7 +20,7 @@ type Project struct {
 // NewProject creates a new project with default start time 12:00
 func NewProject() *Project {
 	return &Project{
-		start: time.Date(2000, 1, 1, 12, 0, 0, 0, time.UTC),
+		start: time.Date(1, 1, 1, 12, 0, 0, 0, time.UTC),
 	}
 }
 
