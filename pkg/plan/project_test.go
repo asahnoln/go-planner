@@ -12,13 +12,17 @@ import (
 func TestAddEventGetTimeRange(t *testing.T) {
 	p := plan.NewProject()
 
-	event := p.AddEvent("Introduction", 5*time.Minute)
-	event2 := p.AddEvent("Warmup", 10*time.Minute)
-	event3 := p.AddEvent("Zip Zap Zop", 15*time.Minute)
+	event := plan.NewEvent("Introduction", 5*time.Minute)
+	event2 := plan.NewEvent("Warmup", 10*time.Minute)
+	event3 := plan.NewEvent("Zip Zap Zop", 15*time.Minute)
 
-	assert.Equal(t, "12:15-12:30", event3.TimeRange())
-	assert.Equal(t, "12:00-12:05", event.TimeRange())
-	assert.Equal(t, "12:05-12:15", event2.TimeRange())
+	p.Add(event).
+		Add(event2).
+		Add(event3)
+
+	assert.Equal(t, "12:15-12:30", p.Event(2).TimeRange())
+	assert.Equal(t, "12:00-12:05", p.Event(0).TimeRange())
+	assert.Equal(t, "12:05-12:15", p.Event(1).TimeRange())
 }
 
 func TestChangeProjectTimeAfterEvent(t *testing.T) {
@@ -39,9 +43,9 @@ func TestChangeProjectTimeBeforeEvent(t *testing.T) {
 
 func TestProjectTable(t *testing.T) {
 	p := plan.NewProject()
-	p.AddEvent("Intro", 5*time.Minute)
-	p.AddEvent("Warmup", 10*time.Minute)
-	p.AddEvent("Zip Zap Zop", 15*time.Minute)
+	p.Add(plan.NewEvent("Intro", 5*time.Minute))
+	p.Add(plan.NewEvent("Warmup", 10*time.Minute))
+	p.Add(plan.NewEvent("Zip Zap Zop", 15*time.Minute))
 
 	var buf bytes.Buffer
 	p.Table(&buf)

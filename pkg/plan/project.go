@@ -24,6 +24,16 @@ func NewProject() *Project {
 	}
 }
 
+func (p *Project) Add(e *Event) *Project {
+	e.start = p.finishTime()
+	p.events = append(p.events, e)
+	return p
+}
+
+func (p *Project) Event(i int) *Event {
+	return p.events[i]
+}
+
 // AddEvent adds an event to the project with given duration.
 // Use time.Duration approach to add durations, like 5 * time.Minute
 func (p *Project) AddEvent(description string, d time.Duration) *Event {

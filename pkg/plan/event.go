@@ -11,6 +11,15 @@ type Event struct {
 	start       time.Time
 }
 
+// NewEvent creates an event with given duration.
+// Use time.Duration approach to add durations, like 5 * time.Minute
+func NewEvent(description string, d time.Duration) *Event {
+	return &Event{
+		description: description,
+		duration:    d,
+	}
+}
+
 // TimeRange returns a string with start and finish time of the event, like "12:00-12:05"
 func (e *Event) TimeRange() string {
 	return e.timeRangeWithSep("-")
