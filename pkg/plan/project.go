@@ -1,5 +1,5 @@
-// Package planner is designed for creating dynamic time tables.
-package planner
+// Package plan is designed for creating dynamic time tables.
+package plan
 
 import (
 	"fmt"

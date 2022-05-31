@@ -1,16 +1,16 @@
-package planner_test
+package plan_test
 
 import (
 	"bytes"
 	"testing"
 	"time"
 
-	"github.com/asahnoln/go-planner"
+	"github.com/asahnoln/go-planner/pkg/plan"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAddEventGetTimeRange(t *testing.T) {
-	p := planner.NewProject()
+	p := plan.NewProject()
 
 	event := p.AddEvent("Introduction", 5*time.Minute)
 	event2 := p.AddEvent("Warmup", 10*time.Minute)
@@ -22,7 +22,7 @@ func TestAddEventGetTimeRange(t *testing.T) {
 }
 
 func TestChangeProjectTimeAfterEvent(t *testing.T) {
-	p := planner.NewProject()
+	p := plan.NewProject()
 	e := p.AddEvent("Warmup", 5*time.Minute)
 	p.StartTime(time.Date(2000, 1, 1, 15, 30, 0, 0, time.UTC))
 
@@ -30,7 +30,7 @@ func TestChangeProjectTimeAfterEvent(t *testing.T) {
 }
 
 func TestChangeProjectTimeBeforeEvent(t *testing.T) {
-	p := planner.NewProject()
+	p := plan.NewProject()
 	p.StartTime(time.Date(2000, 1, 1, 15, 30, 0, 0, time.UTC))
 	e := p.AddEvent("Warmup", 5*time.Minute)
 
@@ -38,7 +38,7 @@ func TestChangeProjectTimeBeforeEvent(t *testing.T) {
 }
 
 func TestProjectTable(t *testing.T) {
-	p := planner.NewProject()
+	p := plan.NewProject()
 	p.AddEvent("Intro", 5*time.Minute)
 	p.AddEvent("Warmup", 10*time.Minute)
 	p.AddEvent("Zip Zap Zop", 15*time.Minute)
