@@ -31,19 +31,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, tea.Quit
 		case "a":
-			m.EventNameInput.Focus()
 			m.AddView = true
 		case "enter":
 			if m.AddView {
+				// TODO: Test Bluring (it should not capture incoming letters)
+				// m.EventNameInput.Blur()
 				m.AddView = false
 			}
 		}
 
 	}
 
-	var cmd tea.Cmd
-	m.EventNameInput, cmd = m.EventNameInput.Update(msg)
-	return m, cmd
+	if m.AddView {
+		m.EventNameInput, _ = m.EventNameInput.Update(msg)
+		m.EventNameInput.Focus()
+	}
+
+	return m, nil
 }
 
 func (m Model) View() string {
