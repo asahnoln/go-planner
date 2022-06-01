@@ -6,10 +6,19 @@
 ** DONE Add event and change base time
 ** DONE Change base time and add event
 ** DONE Timetable from project
+** TODO Change event position
 ** TODO Change tests to assert simpler type from event instead of string from TimeRange
 ** TODO Then use it in TimeRange!
 ** PROJ CLI
-*** TODO Create project
-*** TODO Add events
+Use bubble tea
+Altscreen mode for full screen
+*** PROJ First batch
+**** TODO See the list of events
+**** TODO Add events
+**** TODO See the updated list of events
+*** PROJ Second batch
+**** TODO Change project start time
+**** TODO See
 *** TODO Swap events
 *** TODO Export to PDF
+*** TODO Create project
