@@ -57,6 +57,14 @@ func (p *Project) Table(w io.Writer) {
 	tw.Flush()
 }
 
+// TODO: Test it out
+func (p *Project) Events(i int) *Event {
+	if len(p.events) == 0 {
+		return &Event{}
+	}
+	return p.events[i]
+}
+
 // finishTime is a convinience function to get finishing time of the project
 func (p *Project) finishTime() time.Time {
 	if l := len(p.events); l > 0 {
