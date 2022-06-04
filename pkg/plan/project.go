@@ -17,24 +17,20 @@ type Project struct {
 	start  time.Time
 }
 
-// NewProject creates a new project with default start time 12:00
-func NewProject() *Project {
+// New creates a new project with default start time 12:00
+func New() *Project {
 	return &Project{
 		start: time.Date(1, 1, 1, 12, 0, 0, 0, time.UTC),
 	}
 }
 
-// AddEvent adds an event to the project with given duration.
-// Use time.Duration approach to add durations, like 5 * time.Minute
-func (p *Project) AddEvent(description string, d time.Duration) *Event {
-	e := &Event{
-		description: description,
-		duration:    d,
-		start:       p.finishTime(),
+func (p *Project) Add(es ...*Event) []*Event {
+	for _, e := range es {
+		e.start = p.finishTime()
+		p.events = append(p.events, e)
 	}
-	p.events = append(p.events, e)
 
-	return e
+	return p.events
 }
 
 // StartTime changes project's start time and shifts events start times accordingly
