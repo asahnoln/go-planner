@@ -46,6 +46,7 @@ func New(p *plan.Project) Model {
 		t.Placeholder = i.placeholder
 		m.Inputs = append(m.Inputs, t)
 	}
+	m.Inputs[0].Focus()
 
 	return m
 }
@@ -62,20 +63,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "a":
 			return m.switchView(AddView)
-		case "enter":
-			if m.curView == AddView {
-				i, err := strconv.Atoi(m.Inputs[1].Value())
-				if err != nil {
-					// TODO: Test what has to happen on err?
-				}
-				m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute))
-				return m.switchView(MainView)
-			}
 		}
 	case ViewMsg:
 		return m.switchView(View(msg))
 	}
-	return m, nil
+
+	return m.updateView(msg)
 }
 
 func (m Model) View() string {
@@ -104,5 +97,33 @@ func (m Model) switchView(v View) (tea.Model, tea.Cmd) {
 	if v == AddView {
 		m.Inputs[0].Focus()
 	}
+	return m, nil
+}
+
+func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m.curView {
+	case AddView:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "enter":
+				i, err := strconv.Atoi(m.Inputs[1].Value())
+				if err != nil {
+					// TODO: Test what has to happen on err?
+				}
+				m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute))
+				return m.switchView(MainView)
+			case "tab":
+				if m.Inputs[0].Focused() {
+					m.Inputs[0].Blur()
+					m.Inputs[1].Focus()
+				} else {
+					m.Inputs[1].Blur()
+					m.Inputs[0].Focus()
+				}
+			}
+		}
+	}
+
 	return m, nil
 }

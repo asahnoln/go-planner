@@ -100,14 +100,33 @@ func TestAddEvent(t *testing.T) {
 	})
 }
 
-// func TestSelectInputs(t *testing.T) {
-// 	var m tea.Model = tui.NewModel()
-// 	n := m.(tui.Model)
-// 	n.SwitchView(tui.AddView)
+func TestSelectInputs(t *testing.T) {
+	var m tea.Model = tui.New(nil)
 
-// 	m, _ = n.Update(tea.KeyMsg(tea.Key{
-// 		Type: tea.KeyTab,
-// 	}))
-// 	assert.False(t, n.EventNameInput.Focused(), "want name input blured")
-// 	// assert.True(t, n.EventDurationInput.Focused(), "want duration input focused")
-// }
+	t.Run("tab should not work with inputs on main page", func(t *testing.T) {
+		m, _ = m.Update(tui.ViewMsg(tui.MainView))
+		m, _ = m.Update(tea.KeyMsg(tea.Key{
+			Type: tea.KeyTab,
+		}))
+		n := m.(tui.Model)
+		assert.True(t, n.Inputs[0].Focused(), "want first input still focused")
+		assert.False(t, n.Inputs[1].Focused(), "want second input still blured")
+	})
+
+	t.Run("usual switch focus", func(t *testing.T) {
+		m, _ = m.Update(tui.ViewMsg(tui.AddView))
+		m, _ = m.Update(tea.KeyMsg(tea.Key{
+			Type: tea.KeyTab,
+		}))
+		n := m.(tui.Model)
+		assert.False(t, n.Inputs[0].Focused(), "want first input blured")
+		assert.True(t, n.Inputs[1].Focused(), "want first input focused")
+
+		m, _ = n.Update(tea.KeyMsg(tea.Key{
+			Type: tea.KeyTab,
+		}))
+		n = m.(tui.Model)
+		assert.True(t, n.Inputs[0].Focused(), "want first input focused back")
+		assert.False(t, n.Inputs[1].Focused(), "want second input blured back")
+	})
+}
