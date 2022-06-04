@@ -57,7 +57,16 @@ func TestQuit(t *testing.T) {
 	}
 }
 
-// TODO: When pressed a - it's sent to the input
+func TestEscReturnToMain(t *testing.T) {
+	var m tea.Model = tui.New(nil)
+	m, _ = m.Update(tui.ViewMsg(tui.AddView))
+	m, _ = m.Update(tea.KeyMsg(tea.Key{
+		Type: tea.KeyEsc,
+	}))
+
+	assert.Contains(t, m.View(), "Planner", "want main heading")
+}
+
 func TestSwitchToAddEvent(t *testing.T) {
 	var m tea.Model = tui.New(nil)
 	m, _ = m.Update(tea.KeyMsg(tea.Key{
@@ -70,6 +79,7 @@ func TestSwitchToAddEvent(t *testing.T) {
 	assert.Contains(t, v, "Description", "want text input placeholder")
 	assert.Contains(t, v, "Duration", "want time input placeholder")
 	assert.True(t, n.Inputs[0].Focused(), "want text input focused")
+	assert.NotContains(t, v, "Planner", "doesn't contain first page")
 }
 
 func TestAddEvent(t *testing.T) {
@@ -146,10 +156,10 @@ func TestInput(t *testing.T) {
 	}))
 	m, _ = m.Update(tea.KeyMsg(tea.Key{
 		Type:  tea.KeyRunes,
-		Runes: []rune{'a'},
+		Runes: []rune{'q'},
 	}))
 	n = m.(tui.Model)
-	assert.Equal(t, "a", n.Inputs[1].Value(), "want second input have entered letters 'a'")
+	assert.Equal(t, "q", n.Inputs[1].Value(), "want second input have entered letters 'q'")
 }
 
 func TestResetFocusAfterAdding(t *testing.T) {

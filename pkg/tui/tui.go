@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/asahnoln/go-planner/pkg/plan"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -29,8 +30,23 @@ const (
 type Model struct {
 	Inputs []textinput.Model
 
+	list    list.Model
 	curView View
 	project *plan.Project
+}
+
+type item struct {
+	description, duration, timeRange string
+}
+
+func (i item) Title() string {
+	return i.description
+}
+func (i item) Description() string {
+	return i.timeRange
+}
+func (i item) FilterValue() string {
+	return i.description
 }
 
 func New(p *plan.Project) Model {
@@ -40,6 +56,17 @@ func New(p *plan.Project) Model {
 	m := Model{
 		project: p,
 	}
+
+	var items = make([]list.Item, 0)
+	for _, e := range p.Add() {
+		items = append(items, item{
+			description: e.Description,
+			duration:    strconv.Itoa(int(e.Duration())),
+			timeRange:   e.TimeRange(),
+		})
+	}
+	m.list = list.New(items, list.NewDefaultDelegate(), 0, 24)
+	m.list.Title = "Planner"
 
 	for _, i := range inputs {
 		t := textinput.New()
@@ -60,7 +87,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
-			return m, tea.Quit
+			if msg.String() != "q" && msg.String() != "esc" || m.curView != AddView {
+				return m, tea.Quit
+			}
 		case "a":
 			if m.curView == MainView {
 				return m.switchView(AddView)
@@ -75,16 +104,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var b strings.Builder
-	b.WriteString("Planner\n")
 
-	for _, e := range m.project.Add() {
-		b.WriteString(e.Description)
-		b.WriteString(" ")
-		b.WriteString(e.TimeRange())
-		b.WriteString("\n")
-	}
+	switch m.curView {
+	case MainView:
+		b.WriteString(m.list.View())
 
-	if m.curView == AddView {
+	case AddView:
 		for _, i := range m.Inputs {
 			b.WriteString(i.View() + "\n")
 		}
@@ -113,12 +138,23 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
+			case "esc":
+				return m.switchView(MainView)
 			case "enter":
 				i, err := strconv.Atoi(m.Inputs[1].Value())
 				if err != nil {
 					// TODO: Test what has to happen on err?
 				}
-				m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute))
+
+				items := make([]list.Item, 0)
+				for _, e := range m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute)) {
+					items = append(items, item{
+						description: e.Description,
+						duration:    strconv.Itoa(int(e.Duration())),
+						timeRange:   e.TimeRange(),
+					})
+				}
+				m.list.SetItems(items)
 				m.resetInputs()
 				return m.switchView(MainView)
 			case "tab":

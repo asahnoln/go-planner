@@ -18,6 +18,10 @@ func NewEvent(description string, d time.Duration) *Event {
 	}
 }
 
+func (e *Event) Duration() time.Duration {
+	return e.duration
+}
+
 // TimeRange returns a string with start and finish time of the event, like "12:00-12:05"
 func (e *Event) TimeRange() string {
 	return e.timeRangeWithSep("-")
