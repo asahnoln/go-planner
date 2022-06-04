@@ -1,8 +1,11 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/asahnoln/go-planner/pkg/plan"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -24,13 +27,20 @@ const (
 )
 
 type Model struct {
-	Inputs  []textinput.Model
+	Inputs []textinput.Model
+
 	curView View
-	added   bool
+	project *plan.Project
 }
 
-func New() Model {
-	m := Model{}
+func New(p *plan.Project) Model {
+	if p == nil {
+		p = plan.New()
+	}
+	m := Model{
+		project: p,
+	}
+
 	for _, i := range inputs {
 		t := textinput.New()
 		t.Placeholder = i.placeholder
@@ -54,7 +64,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.switchView(AddView)
 		case "enter":
 			if m.curView == AddView {
-				m.added = true
+				i, err := strconv.Atoi(m.Inputs[1].Value())
+				if err != nil {
+					// TODO: Test what has to happen on err?
+				}
+				m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute))
 				return m.switchView(MainView)
 			}
 		}
@@ -68,6 +82,13 @@ func (m Model) View() string {
 	var b strings.Builder
 	b.WriteString("Planner\n")
 
+	for _, e := range m.project.Add() {
+		b.WriteString(e.Description)
+		b.WriteString(" ")
+		b.WriteString(e.TimeRange())
+		b.WriteString("\n")
+	}
+
 	if m.curView == AddView {
 		for _, i := range m.Inputs {
 			b.WriteString(i.View() + "\n")
@@ -75,9 +96,6 @@ func (m Model) View() string {
 		return b.String()
 	}
 
-	if m.added {
-		b.WriteString("Intro 5 12:00-12:05")
-	}
 	return b.String()
 }
 

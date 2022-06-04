@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if err := tea.NewProgram(tui.New()).Start(); err != nil {
+	if err := tea.NewProgram(tui.New(nil)).Start(); err != nil {
 		log.Fatalf("could not start the program: %q\n", err)
 	}
 }

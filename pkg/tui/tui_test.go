@@ -4,7 +4,9 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 
+	"github.com/asahnoln/go-planner/pkg/plan"
 	"github.com/asahnoln/go-planner/pkg/tui"
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -13,8 +15,19 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	m := tui.New()
+	m := tui.New(nil)
 	assert.Contains(t, m.View(), "Planner")
+}
+
+func TestInitWithPlan(t *testing.T) {
+	p := plan.New()
+	_ = p.Add(plan.NewEvent("Prepare", 10*time.Minute),
+		plan.NewEvent("Ignite", 5*time.Minute),
+	)
+
+	m := tui.New(p)
+	assert.Contains(t, m.View(), "Planner")
+	assert.Contains(t, m.View(), "Ignite")
 }
 
 func TestQuit(t *testing.T) {
@@ -31,7 +44,7 @@ func TestQuit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := tui.New()
+			m := tui.New(nil)
 			_, c := m.Update(tea.KeyMsg(tea.Key{
 				Type:  tt.keyType,
 				Runes: tt.runes,
@@ -46,7 +59,7 @@ func TestQuit(t *testing.T) {
 
 // TODO: When pressed a - it's sent to the input
 func TestSwitchToAddEvent(t *testing.T) {
-	var m tea.Model = tui.New()
+	var m tea.Model = tui.New(nil)
 	m, _ = m.Update(tea.KeyMsg(tea.Key{
 		Type:  tea.KeyRunes,
 		Runes: []rune{'a'},
@@ -60,7 +73,7 @@ func TestSwitchToAddEvent(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	var m tea.Model = tui.New()
+	var m tea.Model = tui.New(nil)
 	n := m.(tui.Model)
 	n.Inputs[0].SetValue("Intro")
 	n.Inputs[1].SetValue("5")

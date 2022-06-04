@@ -48,7 +48,7 @@ func (p *Project) StartTime(t time.Time) {
 func (p *Project) Table(w io.Writer) {
 	tw := tabwriter.NewWriter(w, 0, 0, 1, ' ', 0)
 	for _, e := range p.events {
-		fmt.Fprintf(tw, "%s\t| %s\n", e.description, e.timeRangeWithSep(" | "))
+		fmt.Fprintf(tw, "%s\t| %s\n", e.Description, e.timeRangeWithSep(" | "))
 	}
 	tw.Flush()
 }

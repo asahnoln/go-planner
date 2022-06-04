@@ -6,14 +6,14 @@ import (
 
 // Event is an Event with a start time and duration
 type Event struct {
-	description string
+	Description string
 	duration    time.Duration
 	start       time.Time
 }
 
 func NewEvent(description string, d time.Duration) *Event {
 	return &Event{
-		description: description,
+		Description: description,
 		duration:    d,
 	}
 }
