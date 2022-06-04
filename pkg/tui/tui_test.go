@@ -130,3 +130,44 @@ func TestSelectInputs(t *testing.T) {
 		assert.False(t, n.Inputs[1].Focused(), "want second input blured back")
 	})
 }
+
+func TestInput(t *testing.T) {
+	var m tea.Model = tui.New(nil)
+	m, _ = m.Update(tui.ViewMsg(tui.AddView))
+	m, _ = m.Update(tea.KeyMsg(tea.Key{
+		Type:  tea.KeyRunes,
+		Runes: []rune{'a'},
+	}))
+	n := m.(tui.Model)
+	assert.Equal(t, "a", n.Inputs[0].Value(), "want first input have entered letter 'a'")
+
+	m, _ = n.Update(tea.KeyMsg(tea.Key{
+		Type: tea.KeyTab,
+	}))
+	m, _ = m.Update(tea.KeyMsg(tea.Key{
+		Type:  tea.KeyRunes,
+		Runes: []rune{'a'},
+	}))
+	n = m.(tui.Model)
+	assert.Equal(t, "a", n.Inputs[1].Value(), "want second input have entered letters 'a'")
+}
+
+func TestResetFocusAfterAdding(t *testing.T) {
+	var m tea.Model = tui.New(nil)
+	m, _ = m.Update(tui.ViewMsg(tui.AddView))
+
+	n := m.(tui.Model)
+	n.Inputs[1].Focus()
+	n.Inputs[0].SetValue("test value 1")
+	n.Inputs[1].SetValue("test value 2")
+
+	m, _ = n.Update(tea.KeyMsg(tea.Key{
+		Type: tea.KeyEnter,
+	}))
+
+	n = m.(tui.Model)
+	assert.True(t, n.Inputs[0].Focused(), "want inputs reset: first focus")
+	assert.False(t, n.Inputs[1].Focused(), "want inputs reset: second blur")
+	assert.Empty(t, n.Inputs[0].Value(), "want inputs reset: first empty")
+	assert.Empty(t, n.Inputs[1].Value(), "want inputs reset: second empty")
+}

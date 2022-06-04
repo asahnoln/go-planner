@@ -62,7 +62,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c", "esc":
 			return m, tea.Quit
 		case "a":
-			return m.switchView(AddView)
+			if m.curView == MainView {
+				return m.switchView(AddView)
+			}
 		}
 	case ViewMsg:
 		return m.switchView(View(msg))
@@ -94,10 +96,15 @@ func (m Model) View() string {
 
 func (m Model) switchView(v View) (tea.Model, tea.Cmd) {
 	m.curView = v
-	if v == AddView {
-		m.Inputs[0].Focus()
-	}
+
 	return m, nil
+}
+
+func (m Model) resetInputs() {
+	m.Inputs[0].Focus()
+	m.Inputs[1].Blur()
+	m.Inputs[0].SetValue("")
+	m.Inputs[1].SetValue("")
 }
 
 func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -112,6 +119,7 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// TODO: Test what has to happen on err?
 				}
 				m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute))
+				m.resetInputs()
 				return m.switchView(MainView)
 			case "tab":
 				if m.Inputs[0].Focused() {
@@ -123,6 +131,9 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+
+		m.Inputs[0], _ = m.Inputs[0].Update(msg)
+		m.Inputs[1], _ = m.Inputs[1].Update(msg)
 	}
 
 	return m, nil
