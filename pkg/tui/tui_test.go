@@ -133,7 +133,7 @@ func TestSelectInputs(t *testing.T) {
 		assert.True(t, n.Inputs[1].Focused(), "want first input focused")
 
 		m, _ = n.Update(tea.KeyMsg(tea.Key{
-			Type: tea.KeyTab,
+			Type: tea.KeyShiftTab,
 		}))
 		n = m.(tui.Model)
 		assert.True(t, n.Inputs[0].Focused(), "want first input focused back")
@@ -152,14 +152,20 @@ func TestInput(t *testing.T) {
 	assert.Equal(t, "a", n.Inputs[0].Value(), "want first input have entered letter 'a'")
 
 	m, _ = n.Update(tea.KeyMsg(tea.Key{
-		Type: tea.KeyTab,
+		Type: tea.KeyEnter,
 	}))
 	m, _ = m.Update(tea.KeyMsg(tea.Key{
 		Type:  tea.KeyRunes,
 		Runes: []rune{'q'},
 	}))
 	n = m.(tui.Model)
+	assert.False(t, n.Inputs[0].Focused(), "want first input blured")
 	assert.Equal(t, "q", n.Inputs[1].Value(), "want second input have entered letters 'q'")
+
+	m, _ = n.Update(tea.KeyMsg(tea.Key{
+		Type: tea.KeyEnter,
+	}))
+	assert.Contains(t, m.View(), "Event Duration must be number in minutes!", "want error on wrong input")
 }
 
 func TestResetFocusAfterAdding(t *testing.T) {
@@ -169,7 +175,7 @@ func TestResetFocusAfterAdding(t *testing.T) {
 	n := m.(tui.Model)
 	n.Inputs[1].Focus()
 	n.Inputs[0].SetValue("test value 1")
-	n.Inputs[1].SetValue("test value 2")
+	n.Inputs[1].SetValue("5")
 
 	m, _ = n.Update(tea.KeyMsg(tea.Key{
 		Type: tea.KeyEnter,

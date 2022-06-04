@@ -33,6 +33,7 @@ type Model struct {
 	list    list.Model
 	curView View
 	project *plan.Project
+	err     error
 }
 
 type item struct {
@@ -57,15 +58,7 @@ func New(p *plan.Project) Model {
 		project: p,
 	}
 
-	var items = make([]list.Item, 0)
-	for _, e := range p.Add() {
-		items = append(items, item{
-			description: e.Description,
-			duration:    strconv.Itoa(int(e.Duration())),
-			timeRange:   e.TimeRange(),
-		})
-	}
-	m.list = list.New(items, list.NewDefaultDelegate(), 0, 24)
+	m.list = list.New(m.planItems(), list.NewDefaultDelegate(), 0, 24)
 	m.list.Title = "Planner"
 
 	for _, i := range inputs {
@@ -86,14 +79,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c", "esc":
-			if msg.String() != "q" && msg.String() != "esc" || m.curView != AddView {
-				return m, tea.Quit
-			}
-		case "a":
-			if m.curView == MainView {
-				return m.switchView(AddView)
-			}
+		case "ctrl+c":
+			return m, tea.Quit
 		}
 	case ViewMsg:
 		return m.switchView(View(msg))
@@ -112,6 +99,9 @@ func (m Model) View() string {
 	case AddView:
 		for _, i := range m.Inputs {
 			b.WriteString(i.View() + "\n")
+		}
+		if m.err != nil {
+			b.WriteString("Event Duration must be number in minutes!")
 		}
 		return b.String()
 	}
@@ -132,6 +122,18 @@ func (m Model) resetInputs() {
 	m.Inputs[1].SetValue("")
 }
 
+func (m Model) planItems(es ...*plan.Event) []list.Item {
+	items := make([]list.Item, 0)
+	for _, e := range m.project.Add(es...) {
+		items = append(items, item{
+			description: e.Description,
+			duration:    strconv.Itoa(int(e.Duration())),
+			timeRange:   e.TimeRange(),
+		})
+	}
+	return items
+}
+
 func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.curView {
 	case AddView:
@@ -141,36 +143,54 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc":
 				return m.switchView(MainView)
 			case "enter":
-				i, err := strconv.Atoi(m.Inputs[1].Value())
-				if err != nil {
-					// TODO: Test what has to happen on err?
+				if m.Inputs[0].Value() != "" && m.Inputs[1].Value() != "" {
+					i, err := strconv.Atoi(m.Inputs[1].Value())
+					if err != nil {
+						m.err = err
+						return m, nil
+					}
+
+					m.list.SetItems(m.planItems(
+						plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute),
+					))
+					m.resetInputs()
+					return m.switchView(MainView)
 				}
 
-				items := make([]list.Item, 0)
-				for _, e := range m.project.Add(plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute)) {
-					items = append(items, item{
-						description: e.Description,
-						duration:    strconv.Itoa(int(e.Duration())),
-						timeRange:   e.TimeRange(),
-					})
-				}
-				m.list.SetItems(items)
-				m.resetInputs()
-				return m.switchView(MainView)
-			case "tab":
-				if m.Inputs[0].Focused() {
-					m.Inputs[0].Blur()
-					m.Inputs[1].Focus()
-				} else {
-					m.Inputs[1].Blur()
-					m.Inputs[0].Focus()
-				}
+				// TODO: Actually only one way tested
+				m.switchInputFocus()
+
+			case "tab", "shift+tab":
+				m.switchInputFocus()
 			}
 		}
 
-		m.Inputs[0], _ = m.Inputs[0].Update(msg)
-		m.Inputs[1], _ = m.Inputs[1].Update(msg)
+		for i := range inputs {
+			m.Inputs[i], _ = m.Inputs[i].Update(msg)
+		}
+
+	case MainView:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "q", "esc":
+				return m, tea.Quit
+			case "a":
+				return m.switchView(AddView)
+			}
+
+		}
 	}
 
 	return m, nil
+}
+
+func (m Model) switchInputFocus() {
+	if m.Inputs[0].Focused() {
+		m.Inputs[0].Blur()
+		m.Inputs[1].Focus()
+	} else {
+		m.Inputs[1].Blur()
+		m.Inputs[0].Focus()
+	}
 }
