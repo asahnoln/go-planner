@@ -22,19 +22,59 @@ type View int
 
 type ViewMsg View
 
+type UpdatePlanMsg struct {
+	i           int
+	description string
+	d           time.Duration
+}
+
+type InsertPlanMsg struct {
+	e *plan.Event
+}
+
+type EditingMsg struct {
+	i    int
+	item Item
+}
+
+func switchView(v View) tea.Cmd {
+	return func() tea.Msg {
+		return ViewMsg(v)
+	}
+}
+
+func updatePlan(i int, description string, d time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		return UpdatePlanMsg{
+			i, description, d,
+		}
+	}
+}
+
+func insertPlan(e *plan.Event) tea.Cmd {
+	return func() tea.Msg {
+		return InsertPlanMsg{e}
+	}
+}
+
+func setEditing(i int, item Item) tea.Cmd {
+	return func() tea.Msg {
+		return EditingMsg{i, item}
+	}
+}
+
 const (
 	MainView View = iota
 	AddView
 )
 
 type Model struct {
-	Inputs []textinput.Model
+	Views map[View]tea.Model
 
 	List    list.Model
 	curView View
 	project *plan.Project
 	err     error
-	editing *int
 }
 
 type Item struct {
@@ -57,17 +97,22 @@ func New(p *plan.Project) Model {
 	}
 	m := Model{
 		project: p,
+		Views: map[View]tea.Model{
+			MainView: MainViewModel{},
+		},
 	}
 
 	m.List = list.New(m.planItems(), list.NewDefaultDelegate(), 0, 24)
 	m.List.Title = "Planner"
 
+	am := AddViewModel{}
 	for _, i := range inputs {
 		t := textinput.New()
 		t.Placeholder = i.placeholder
-		m.Inputs = append(m.Inputs, t)
+		am.Inputs = append(am.Inputs, t)
 	}
-	m.Inputs[0].Focus()
+	am.Inputs[0].Focus()
+	m.Views[AddView] = am
 
 	return m
 }
@@ -85,6 +130,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case ViewMsg:
 		return m.switchView(View(msg))
+	case UpdatePlanMsg:
+		es := m.project.Add()
+		es[msg.i].Description = msg.description
+		es[msg.i].SetDuration(msg.d)
+		m.List.SetItems(m.planItems())
+
+		return m.switchView(MainView)
+	case InsertPlanMsg:
+		m.List.SetItems(m.planItems(
+			msg.e,
+		))
+
+		return m.switchView(MainView)
 	}
 
 	return m.updateView(msg)
@@ -98,13 +156,7 @@ func (m Model) View() string {
 		b.WriteString(m.List.View())
 
 	case AddView:
-		for _, i := range m.Inputs {
-			b.WriteString(i.View() + "\n")
-		}
-		if m.err != nil {
-			b.WriteString("Event Duration must be number in minutes!")
-		}
-		return b.String()
+		return m.Views[AddView].View()
 	}
 
 	return b.String()
@@ -114,13 +166,6 @@ func (m Model) switchView(v View) (tea.Model, tea.Cmd) {
 	m.curView = v
 
 	return m, nil
-}
-
-func (m Model) resetInputs() {
-	m.Inputs[0].Focus()
-	m.Inputs[1].Blur()
-	m.Inputs[0].SetValue("")
-	m.Inputs[1].SetValue("")
 }
 
 func (m Model) planItems(es ...*plan.Event) []list.Item {
@@ -138,46 +183,7 @@ func (m Model) planItems(es ...*plan.Event) []list.Item {
 func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.curView {
 	case AddView:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "esc":
-				return m.switchView(MainView)
-			case "enter":
-				if m.Inputs[0].Value() != "" && m.Inputs[1].Value() != "" {
-					i, err := strconv.Atoi(m.Inputs[1].Value())
-					if err != nil {
-						m.err = err
-						return m, nil
-					}
-
-					if m.editing != nil {
-						es := m.project.Add()
-						es[*m.editing].Description = m.Inputs[0].Value()
-						es[*m.editing].SetDuration(time.Duration(i) * time.Minute)
-						m.List.SetItems(m.planItems())
-					} else {
-						m.List.SetItems(m.planItems(
-							plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute),
-						))
-					}
-
-					m.resetInputs()
-					return m.switchView(MainView)
-				}
-
-				// TODO: Actually only one way tested
-				m.switchInputFocus()
-
-			case "tab", "shift+tab":
-				m.switchInputFocus()
-			}
-		}
-
-		for i := range inputs {
-			m.Inputs[i], _ = m.Inputs[i].Update(msg)
-		}
-
+		return m.Views[AddView].Update(msg)
 	case MainView:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -190,11 +196,10 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(m.List.Items()) == 0 {
 					return m, nil
 				}
-				item := m.List.SelectedItem().(Item)
-				m.Inputs[0].SetValue(item.description)
-				m.Inputs[1].SetValue(item.duration)
 				i := m.List.Index()
-				m.editing = &i
+				item := m.List.SelectedItem().(Item)
+
+				tea.Batch(setEditing(i, item), switchView(AddView))
 				return m.switchView(AddView)
 			}
 
@@ -204,14 +209,4 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
-}
-
-func (m Model) switchInputFocus() {
-	if m.Inputs[0].Focused() {
-		m.Inputs[0].Blur()
-		m.Inputs[1].Focus()
-	} else {
-		m.Inputs[1].Blur()
-		m.Inputs[0].Focus()
-	}
 }
