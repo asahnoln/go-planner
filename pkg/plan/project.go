@@ -13,7 +13,7 @@ const Layout = "15:04"
 
 // Project presents current timetable holding events with their durations.
 type Project struct {
-	events []*Event
+	events []*ProjectEvent
 	start  time.Time
 }
 
@@ -24,10 +24,14 @@ func New() *Project {
 	}
 }
 
-func (p *Project) Add(es ...*Event) []*Event {
+func (p *Project) Add(es ...*Event) []*ProjectEvent {
 	for _, e := range es {
-		e.start = p.finishTime()
-		p.events = append(p.events, e)
+		pe := &ProjectEvent{
+			Event:   e,
+			start:   p.finishTime(),
+			project: p,
+		}
+		p.events = append(p.events, pe)
 	}
 
 	return p.events
@@ -51,14 +55,6 @@ func (p *Project) Table(w io.Writer) {
 		fmt.Fprintf(tw, "%s\t| %s\n", e.Description, e.timeRangeWithSep(" | "))
 	}
 	tw.Flush()
-}
-
-// TODO: Test it out
-func (p *Project) Events(i int) *Event {
-	if len(p.events) == 0 {
-		return &Event{}
-	}
-	return p.events[i]
 }
 
 // finishTime is a convinience function to get finishing time of the project

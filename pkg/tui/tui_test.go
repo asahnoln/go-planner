@@ -38,7 +38,6 @@ func TestQuit(t *testing.T) {
 	}{
 		{"q", tea.KeyRunes, []rune{'q'}},
 		{"ctrl+c", tea.KeyCtrlC, nil},
-		// TODO: Esc might be not good for subviews
 		{"esc", tea.KeyEsc, nil},
 	}
 
@@ -82,13 +81,28 @@ func TestSwitchToAddEvent(t *testing.T) {
 	assert.NotContains(t, v, "Planner", "doesn't contain first page")
 }
 
+func TestSwitchToEditEvent(t *testing.T) {
+	p := plan.New()
+	_ = p.Add(plan.NewEvent("First", 10*time.Minute))
+	var m tea.Model = tui.New(p)
+	m, _ = m.Update(tea.KeyMsg(tea.Key{
+		Type: tea.KeyEnter,
+	}))
+	v := m.View()
+	require.Contains(t, v, "> ", "want text input")
+	assert.Contains(t, v, "First", "want text input placeholder")
+	assert.Contains(t, v, "10", "want time input placeholder")
+	assert.NotContains(t, v, "Planner", "doesn't contain first page")
+}
+
 func TestAddEvent(t *testing.T) {
 	var m tea.Model = tui.New(nil)
 	n := m.(tui.Model)
 	n.Inputs[0].SetValue("Intro")
 	n.Inputs[1].SetValue("5")
 
-	t.Run("enter should not work on main page", func(t *testing.T) {
+	t.Run("enter should not work on main page if no events exist", func(t *testing.T) {
+		// TODO: Should enter on empty page send to adding an event? Or confusing?
 		m, _ = n.Update(tui.ViewMsg(tui.MainView))
 		m, _ = m.Update(tea.KeyMsg(tea.Key{
 			Type: tea.KeyEnter,
@@ -186,4 +200,56 @@ func TestResetFocusAfterAdding(t *testing.T) {
 	assert.False(t, n.Inputs[1].Focused(), "want inputs reset: second blur")
 	assert.Empty(t, n.Inputs[0].Value(), "want inputs reset: first empty")
 	assert.Empty(t, n.Inputs[1].Value(), "want inputs reset: second empty")
+}
+
+func TestList(t *testing.T) {
+	p := plan.New()
+	_ = p.Add(plan.NewEvent("Prepare", 10*time.Minute),
+		plan.NewEvent("Ignite", 5*time.Minute),
+	)
+
+	var m tea.Model = tui.New(p)
+	m, _ = m.Update(tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: []rune{'j'},
+	})
+
+	n := m.(tui.Model)
+	i := n.List.SelectedItem().(tui.Item)
+	assert.Equal(t, "Ignite", i.Title(), "want second item selected")
+}
+
+func TestEdit(t *testing.T) {
+	p := plan.New()
+	_ = p.Add(plan.NewEvent("First", 10*time.Minute),
+		plan.NewEvent("Second", 5*time.Minute),
+		plan.NewEvent("Third", 5*time.Minute),
+	)
+
+	var m tea.Model = tui.New(p)
+	m, _ = m.Update(tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: []rune{'j'},
+	})
+	m, _ = m.Update(tea.KeyMsg{
+		Type: tea.KeyEnter,
+	})
+	m, _ = m.Update(tea.KeyMsg{
+		Type: tea.KeyBackspace,
+	})
+	m, _ = m.Update(tea.KeyMsg{
+		Type: tea.KeyTab,
+	})
+	m, _ = m.Update(tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: []rune{'0'},
+	})
+	m, _ = m.Update(tea.KeyMsg{
+		Type: tea.KeyEnter,
+	})
+
+	n := m.(tui.Model)
+	i := n.List.SelectedItem().(tui.Item)
+	assert.Equal(t, "Secon", i.Title(), "want second item changed title")
+	assert.Contains(t, n.View(), "12:10-13:00", "want second item changed timing")
 }

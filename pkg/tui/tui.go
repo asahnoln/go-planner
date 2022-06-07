@@ -30,23 +30,24 @@ const (
 type Model struct {
 	Inputs []textinput.Model
 
-	list    list.Model
+	List    list.Model
 	curView View
 	project *plan.Project
 	err     error
+	editing *int
 }
 
-type item struct {
+type Item struct {
 	description, duration, timeRange string
 }
 
-func (i item) Title() string {
+func (i Item) Title() string {
 	return i.description
 }
-func (i item) Description() string {
+func (i Item) Description() string {
 	return i.timeRange
 }
-func (i item) FilterValue() string {
+func (i Item) FilterValue() string {
 	return i.description
 }
 
@@ -58,8 +59,8 @@ func New(p *plan.Project) Model {
 		project: p,
 	}
 
-	m.list = list.New(m.planItems(), list.NewDefaultDelegate(), 0, 24)
-	m.list.Title = "Planner"
+	m.List = list.New(m.planItems(), list.NewDefaultDelegate(), 0, 24)
+	m.List.Title = "Planner"
 
 	for _, i := range inputs {
 		t := textinput.New()
@@ -94,7 +95,7 @@ func (m Model) View() string {
 
 	switch m.curView {
 	case MainView:
-		b.WriteString(m.list.View())
+		b.WriteString(m.List.View())
 
 	case AddView:
 		for _, i := range m.Inputs {
@@ -125,9 +126,9 @@ func (m Model) resetInputs() {
 func (m Model) planItems(es ...*plan.Event) []list.Item {
 	items := make([]list.Item, 0)
 	for _, e := range m.project.Add(es...) {
-		items = append(items, item{
+		items = append(items, Item{
 			description: e.Description,
-			duration:    strconv.Itoa(int(e.Duration())),
+			duration:    strconv.Itoa(int(e.Duration() / time.Minute)),
 			timeRange:   e.TimeRange(),
 		})
 	}
@@ -150,9 +151,17 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return m, nil
 					}
 
-					m.list.SetItems(m.planItems(
-						plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute),
-					))
+					if m.editing != nil {
+						es := m.project.Add()
+						es[*m.editing].Description = m.Inputs[0].Value()
+						es[*m.editing].SetDuration(time.Duration(i) * time.Minute)
+						m.List.SetItems(m.planItems())
+					} else {
+						m.List.SetItems(m.planItems(
+							plan.NewEvent(m.Inputs[0].Value(), time.Duration(i)*time.Minute),
+						))
+					}
+
 					m.resetInputs()
 					return m.switchView(MainView)
 				}
@@ -177,9 +186,21 @@ func (m Model) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			case "a":
 				return m.switchView(AddView)
+			case "enter":
+				if len(m.List.Items()) == 0 {
+					return m, nil
+				}
+				item := m.List.SelectedItem().(Item)
+				m.Inputs[0].SetValue(item.description)
+				m.Inputs[1].SetValue(item.duration)
+				i := m.List.Index()
+				m.editing = &i
+				return m.switchView(AddView)
 			}
 
 		}
+
+		m.List, _ = m.List.Update(msg)
 	}
 
 	return m, nil
